@@ -2,6 +2,6 @@
 ## Title: AutoPickLockbox
 ## Notes: Right-click locked bag items to Pick Lock them; shows colour-coded lockbox pickability in mail.
 ## Author: Revenga
-## Version: 0.1.4
+## Version: 0.1.5
 
 AutoPickLockbox.lua
