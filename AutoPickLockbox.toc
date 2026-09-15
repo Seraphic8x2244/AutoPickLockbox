@@ -1,7 +1,7 @@
 ## Interface: 11200
 ## Title: AutoPickLockbox
-## Notes: Right-click locked bag items to Pick Lock them; shows the Pick Lock cursor on hover.
+## Notes: Right-click locked bag items to Pick Lock them; shows lockbox pickability in mail.
 ## Author: Revenga
-## Version: 0.1.1
+## Version: 0.1.2
 
 AutoPickLockbox.lua
