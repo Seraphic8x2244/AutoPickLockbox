@@ -1,4 +1,4 @@
--- AutoPickLockbox 0.1.4
+-- AutoPickLockbox 0.1.5
 -- Vanilla WoW 1.12.1
 --
 -- Plain right-click on a locked bag item as a rogue:
@@ -23,7 +23,7 @@ scanner:SetOwner(UIParent, "ANCHOR_NONE")
 
 local LOCKED_TEXT = LOCKED or "Locked"
 local PICK_LOCK_SPELL = "Pick Lock"
-local PICK_LOCK_CURSOR = "PickLock.blp"
+local PICK_LOCK_CURSOR = "LOCK_CURSOR"
 local cursorOverridden = false
 
 -- Vanilla lock requirements. vMaNGOS resolves these through each item's
@@ -139,7 +139,7 @@ end
 
 local function ResetLockpickCursor()
   if cursorOverridden then
-    SetCursor(nil)
+    ResetCursor()
     cursorOverridden = false
   end
 end
