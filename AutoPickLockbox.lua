@@ -1,4 +1,4 @@
--- AutoPickLockbox 0.1.3
+-- AutoPickLockbox 0.1.4
 -- Vanilla WoW 1.12.1
 --
 -- Plain right-click on a locked bag item as a rogue:
@@ -26,24 +26,31 @@ local PICK_LOCK_SPELL = "Pick Lock"
 local PICK_LOCK_CURSOR = "PickLock.blp"
 local cursorOverridden = false
 
--- Mail does not expose the same lock-state information as a live bag item.
--- For known Vanilla lockboxes, show only "Pickable" and colour it using
--- the normal lockpicking difficulty progression relative to current skill.
+-- Vanilla lock requirements. vMaNGOS resolves these through each item's
+-- lock_id and the 1.12.1 Lock.dbc; this table mirrors those values for mail,
+-- where the normal item instance/lock tooltip information is not available.
 local MAIL_LOCKBOX_REQUIREMENTS = {
-  ["Battered Junkbox"] = 25,
-  ["Worn Junkbox"] = 100,
+  ["Battered Junkbox"] = 1,
+  ["Worn Junkbox"] = 70,
   ["Sturdy Junkbox"] = 175,
   ["Heavy Junkbox"] = 250,
-  ["Ornate Bronze Lockbox"] = 60,
-  ["Heavy Bronze Lockbox"] = 75,
-  ["Iron Lockbox"] = 85,
+  ["Ornate Bronze Lockbox"] = 1,
+  ["Heavy Bronze Lockbox"] = 25,
+  ["Iron Lockbox"] = 70,
   ["Strong Iron Lockbox"] = 125,
-  ["Steel Lockbox"] = 180,
+  ["Steel Lockbox"] = 175,
   ["Reinforced Steel Lockbox"] = 225,
   ["Mithril Lockbox"] = 225,
   ["Thorium Lockbox"] = 225,
   ["Eternium Lockbox"] = 225,
-  ["Gnomish Lock Box"] = 150,
+}
+
+local PICKABLE_COLOURS = {
+  red     = RED_FONT_COLOR or { r = 1.00, g = 0.10, b = 0.10 },
+  orange  = { r = 1.00, g = 0.50, b = 0.25 },
+  yellow  = { r = 1.00, g = 1.00, b = 0.00 },
+  green   = { r = 0.25, g = 0.75, b = 0.25 },
+  grey    = { r = 0.50, g = 0.50, b = 0.50 },
 }
 
 local function GetLockpickingSkill()
@@ -58,17 +65,23 @@ local function GetLockpickingSkill()
 end
 
 local function GetPickableColour(skill, required)
+  local colour
+
+  -- Match vMaNGOS gathering-skill difficulty thresholds:
+  -- orange = requirement, yellow = +25, green = +50, grey = +100.
   if skill < required then
-    return 1.00, 0.125, 0.125 -- red
+    colour = PICKABLE_COLOURS.red
   elseif skill < required + 25 then
-    return 1.00, 0.50, 0.00 -- orange
+    colour = PICKABLE_COLOURS.orange
   elseif skill < required + 50 then
-    return 1.00, 1.00, 0.00 -- yellow
-  elseif skill < required + 75 then
-    return 0.25, 0.75, 0.25 -- green
+    colour = PICKABLE_COLOURS.yellow
+  elseif skill < required + 100 then
+    colour = PICKABLE_COLOURS.green
   else
-    return 0.50, 0.50, 0.50 -- grey
+    colour = PICKABLE_COLOURS.grey
   end
+
+  return colour.r, colour.g, colour.b
 end
 
 local function AddMailboxPickableLine(index, attachIndex)
