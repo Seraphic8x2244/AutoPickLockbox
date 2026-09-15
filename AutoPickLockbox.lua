@@ -1,4 +1,4 @@
--- AutoPickLockbox 0.1.2
+-- AutoPickLockbox 0.1.3
 -- Vanilla WoW 1.12.1
 --
 -- Plain right-click on a locked bag item as a rogue:
@@ -6,7 +6,7 @@
 --   2. Target the clicked bag slot
 --
 -- Hovering a locked bag item shows Blizzard's native Pick Lock cursor.
--- Known lockboxes in mailbox tooltips show their Lockpicking requirement.
+-- Known lockboxes in mailbox tooltips show a colour-coded Pickable line.
 -- All other clicks fall through to Blizzard's normal bag handling.
 
 local APL = {}
@@ -27,8 +27,8 @@ local PICK_LOCK_CURSOR = "PickLock.blp"
 local cursorOverridden = false
 
 -- Mail does not expose the same lock-state information as a live bag item.
--- For known Vanilla lockboxes, show only the required Lockpicking skill.
--- Green means the current character has enough skill; red means they do not.
+-- For known Vanilla lockboxes, show only "Pickable" and colour it using
+-- the normal lockpicking difficulty progression relative to current skill.
 local MAIL_LOCKBOX_REQUIREMENTS = {
   ["Battered Junkbox"] = 25,
   ["Worn Junkbox"] = 100,
@@ -57,6 +57,20 @@ local function GetLockpickingSkill()
   return 0
 end
 
+local function GetPickableColour(skill, required)
+  if skill < required then
+    return 1.00, 0.125, 0.125 -- red
+  elseif skill < required + 25 then
+    return 1.00, 0.50, 0.00 -- orange
+  elseif skill < required + 50 then
+    return 1.00, 1.00, 0.00 -- yellow
+  elseif skill < required + 75 then
+    return 0.25, 0.75, 0.25 -- green
+  else
+    return 0.50, 0.50, 0.50 -- grey
+  end
+end
+
 local function AddMailboxPickableLine(index, attachIndex)
   if not index then
     return
@@ -68,12 +82,8 @@ local function AddMailboxPickableLine(index, attachIndex)
     return
   end
 
-  if GetLockpickingSkill() >= required then
-    GameTooltip:AddLine("Pickable (" .. required .. ")", 0, 1, 0)
-  else
-    GameTooltip:AddLine("Pickable (" .. required .. ")", 1, 0.125, 0.125)
-  end
-
+  local r, g, b = GetPickableColour(GetLockpickingSkill(), required)
+  GameTooltip:AddLine("Pickable", r, g, b)
   GameTooltip:Show()
 end
 
@@ -206,8 +216,8 @@ function ContainerFrameItemButton_OnLeave()
 end
 
 -- Mailbox tooltips do not reliably expose whether a specific lockbox has
--- already been unlocked. Add only a neutral Pickable line with the known
--- skill requirement, colour-coded by the Rogue's current Lockpicking skill.
+-- already been unlocked. Add only "Pickable", with its colour indicating
+-- lockpicking difficulty relative to the Rogue's current skill.
 local OriginalGameTooltip_SetInboxItem = GameTooltip.SetInboxItem
 
 function GameTooltip:SetInboxItem(index, attachIndex)
