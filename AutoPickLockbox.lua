@@ -1,4 +1,4 @@
--- AutoPickLockbox 0.1.1
+-- AutoPickLockbox 0.1.2
 -- Vanilla WoW 1.12.1
 --
 -- Plain right-click on a locked bag item as a rogue:
@@ -6,6 +6,7 @@
 --   2. Target the clicked bag slot
 --
 -- Hovering a locked bag item shows Blizzard's native Pick Lock cursor.
+-- Known lockboxes in mailbox tooltips show their Lockpicking requirement.
 -- All other clicks fall through to Blizzard's normal bag handling.
 
 local APL = {}
@@ -16,7 +17,7 @@ if playerClass ~= "ROGUE" then
 end
 
 -- Hidden tooltip used to detect the item's actual "Locked" tooltip line.
--- This avoids maintaining a hardcoded list of lockbox item IDs.
+-- This avoids maintaining a hardcoded list of lockbox item IDs for bag behaviour.
 local scanner = CreateFrame("GameTooltip", "AutoPickLockboxTooltip", UIParent, "GameTooltipTemplate")
 scanner:SetOwner(UIParent, "ANCHOR_NONE")
 
@@ -24,6 +25,57 @@ local LOCKED_TEXT = LOCKED or "Locked"
 local PICK_LOCK_SPELL = "Pick Lock"
 local PICK_LOCK_CURSOR = "PickLock.blp"
 local cursorOverridden = false
+
+-- Mail does not expose the same lock-state information as a live bag item.
+-- For known Vanilla lockboxes, show only the required Lockpicking skill.
+-- Green means the current character has enough skill; red means they do not.
+local MAIL_LOCKBOX_REQUIREMENTS = {
+  ["Battered Junkbox"] = 25,
+  ["Worn Junkbox"] = 100,
+  ["Sturdy Junkbox"] = 175,
+  ["Heavy Junkbox"] = 250,
+  ["Ornate Bronze Lockbox"] = 60,
+  ["Heavy Bronze Lockbox"] = 75,
+  ["Iron Lockbox"] = 85,
+  ["Strong Iron Lockbox"] = 125,
+  ["Steel Lockbox"] = 180,
+  ["Reinforced Steel Lockbox"] = 225,
+  ["Mithril Lockbox"] = 225,
+  ["Thorium Lockbox"] = 225,
+  ["Eternium Lockbox"] = 225,
+  ["Gnomish Lock Box"] = 150,
+}
+
+local function GetLockpickingSkill()
+  for i = 1, GetNumSkillLines() do
+    local name, _, _, rank = GetSkillLineInfo(i)
+    if name == "Lockpicking" then
+      return tonumber(rank) or 0
+    end
+  end
+
+  return 0
+end
+
+local function AddMailboxPickableLine(index, attachIndex)
+  if not index then
+    return
+  end
+
+  local itemName = GetInboxItem(index, attachIndex or 1)
+  local required = itemName and MAIL_LOCKBOX_REQUIREMENTS[itemName]
+  if not required then
+    return
+  end
+
+  if GetLockpickingSkill() >= required then
+    GameTooltip:AddLine("Pickable (" .. required .. ")", 0, 1, 0)
+  else
+    GameTooltip:AddLine("Pickable (" .. required .. ")", 1, 0.125, 0.125)
+  end
+
+  GameTooltip:Show()
+end
 
 local function IsLockedBagItem(bag, slot)
   if not GetContainerItemLink(bag, slot) then
@@ -151,4 +203,14 @@ function ContainerFrameItemButton_OnLeave()
   end
 
   ResetLockpickCursor()
+end
+
+-- Mailbox tooltips do not reliably expose whether a specific lockbox has
+-- already been unlocked. Add only a neutral Pickable line with the known
+-- skill requirement, colour-coded by the Rogue's current Lockpicking skill.
+local OriginalGameTooltip_SetInboxItem = GameTooltip.SetInboxItem
+
+function GameTooltip:SetInboxItem(index, attachIndex)
+  OriginalGameTooltip_SetInboxItem(self, index, attachIndex)
+  AddMailboxPickableLine(index, attachIndex)
 end
